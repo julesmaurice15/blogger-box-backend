@@ -1,18 +1,19 @@
 package com.dauphine.blogger_box_backend.dto;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 public class PostDTO {
-    private Long id;
+    private UUID id;
     private String title;
     private String content;
     private LocalDate createdDate;
-    private Long categoryId;
+    private UUID categoryId;
 
     public PostDTO() {
     }
 
-    public PostDTO(Long id, String title, String content, LocalDate createdDate, Long categoryId) {
+    public PostDTO(UUID id, String title, String content, LocalDate createdDate, UUID categoryId) {
         this.id = id;
         this.title = title;
         this.content = content;
@@ -20,11 +21,12 @@ public class PostDTO {
         this.categoryId = categoryId;
     }
 
-    public Long getId() {
+    // Getters et setters
+    public UUID getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 
@@ -52,11 +54,11 @@ public class PostDTO {
         this.createdDate = createdDate;
     }
 
-    public Long getCategoryId() {
+    public UUID getCategoryId() {
         return categoryId;
     }
 
-    public void setCategoryId(Long categoryId) {
+    public void setCategoryId(UUID categoryId) {
         this.categoryId = categoryId;
     }
 }

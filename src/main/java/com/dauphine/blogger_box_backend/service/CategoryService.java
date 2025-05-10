@@ -1,69 +1,60 @@
 package com.dauphine.blogger_box_backend.service;
 
+import com.dauphine.blogger_box_backend.exception.CategoryNotFoundException;
+import com.dauphine.blogger_box_backend.exception.CategoryNameAlreadyExistsException;
 import com.dauphine.blogger_box_backend.model.Category;
-import com.dauphine.blogger_box_backend.model.Post;
+import com.dauphine.blogger_box_backend.repository.CategoryRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.UUID;
 
 @Service
 public class CategoryService {
 
-    private List<Category> categories = new ArrayList<>();
-    private Long nextId = 1L;
+    private final CategoryRepository repository;
 
-    // Mock data initializer
-    public CategoryService() {
-        categories.add(new Category(nextId++, "Technology"));
-        categories.add(new Category(nextId++, "Travel"));
-        categories.add(new Category(nextId++, "Food"));
+    public CategoryService(CategoryRepository repository) {
+        this.repository = repository;
     }
 
-    public List<Category> getAllCategories() {
-        return categories;
+    public List<Category> getAll() {
+        return repository.findAll();
     }
 
-    public Optional<Category> getCategoryById(Long id) {
-        return categories.stream()
-                .filter(category -> category.getId().equals(id))
-                .findFirst();
+    public List<Category> getAllLikeName(String name) {
+        return repository.findAllLikeName(name);
     }
 
-    public Category createCategory(Category category) {
-        category.setId(nextId++);
-        categories.add(category);
-        return category;
+    public Category getById(UUID id) throws CategoryNotFoundException {
+        return repository.findById(id)
+                .orElseThrow(() -> new CategoryNotFoundException(id));
     }
 
-    public Optional<Category> updateCategory(Long id, Category updatedCategory) {
-        Optional<Category> categoryOpt = getCategoryById(id);
-
-        if (categoryOpt.isPresent()) {
-            Category category = categoryOpt.get();
-            category.setName(updatedCategory.getName());
-            return Optional.of(category);
+    public Category create(String name) throws CategoryNameAlreadyExistsException {
+        // Vérifier si le nom existe déjà
+        List<Category> existingCategories = getAllLikeName(name);
+        for (Category cat : existingCategories) {
+            if (cat.getName().equalsIgnoreCase(name)) {
+                throw new CategoryNameAlreadyExistsException(name);
+            }
         }
 
-        return Optional.empty();
+        Category category = new Category(name);
+        return repository.save(category);
     }
 
-    public boolean deleteCategory(Long id) {
-        Optional<Category> categoryOpt = getCategoryById(id);
+    public Category updateName(UUID id, String name) throws CategoryNotFoundException {
+        Category category = getById(id);
+        category.setName(name);
+        return repository.save(category);
+    }
 
-        if (categoryOpt.isPresent()) {
-            categories.remove(categoryOpt.get());
-            return true;
+    public boolean deleteById(UUID id) throws CategoryNotFoundException {
+        if (!repository.existsById(id)) {
+            throw new CategoryNotFoundException(id);
         }
-
-        return false;
-    }
-
-    public List<Post> getPostsByCategory(Long categoryId, List<Post> allPosts) {
-        return allPosts.stream()
-                .filter(post -> post.getCategoryId().equals(categoryId))
-                .collect(Collectors.toList());
+        repository.deleteById(id);
+        return true;
     }
 }

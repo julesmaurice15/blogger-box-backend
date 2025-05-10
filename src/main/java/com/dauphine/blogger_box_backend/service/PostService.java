@@ -1,85 +1,91 @@
 package com.dauphine.blogger_box_backend.service;
 
-
-
+import com.dauphine.blogger_box_backend.exception.CategoryNotFoundException;
+import com.dauphine.blogger_box_backend.exception.PostNotFoundException;
+import com.dauphine.blogger_box_backend.model.Category;
 import com.dauphine.blogger_box_backend.model.Post;
+import com.dauphine.blogger_box_backend.repository.PostRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Comparator;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.UUID;
 
 @Service
 public class PostService {
 
-    private List<Post> posts = new ArrayList<>();
-    private Long nextId = 1L;
+    private final PostRepository repository;
+    private final CategoryService categoryService;
 
-    // Mock data initializer
-    public PostService() {
-        posts.add(new Post(nextId++, "Spring Boot Intro", "Introduction to Spring Boot", LocalDate.now(), 1L));
-        posts.add(new Post(nextId++, "Paris Travel Guide", "Best places to visit in Paris", LocalDate.now().minusDays(1), 2L));
-        posts.add(new Post(nextId++, "Italian Cuisine", "Exploring Italian dishes", LocalDate.now().minusDays(2), 3L));
+    public PostService(PostRepository repository, CategoryService categoryService) {
+        this.repository = repository;
+        this.categoryService = categoryService;
     }
 
     public List<Post> getAllPosts() {
-        return posts.stream()
-                .sorted(Comparator.comparing(Post::getCreatedDate).reversed())
-                .collect(Collectors.toList());
+        return repository.findAll();
     }
 
-    public Optional<Post> getPostById(Long id) {
-        return posts.stream()
-                .filter(post -> post.getId().equals(id))
-                .findFirst();
+    public Post getPostById(UUID id) throws PostNotFoundException {
+        return repository.findById(id)
+                .orElseThrow(() -> new PostNotFoundException(id));
     }
 
-    public Post createPost(Post post) {
-        post.setId(nextId++);
-        if (post.getCreatedDate() == null) {
-            post.setCreatedDate(LocalDate.now());
-        }
-        posts.add(post);
-        return post;
+    public Post createPost(String title, String content, UUID categoryId)
+            throws CategoryNotFoundException {
+        Category category = categoryService.getById(categoryId);
+        Post post = new Post(title, content, category);
+        return repository.save(post);
     }
 
-    public Optional<Post> updatePost(Long id, Post updatedPost) {
-        Optional<Post> postOpt = getPostById(id);
+    public Post updatePost(UUID id, String title, String content, UUID categoryId)
+            throws PostNotFoundException, CategoryNotFoundException {
+        Post post = getPostById(id);
 
-        if (postOpt.isPresent()) {
-            Post post = postOpt.get();
-            post.setTitle(updatedPost.getTitle());
-            post.setContent(updatedPost.getContent());
-            post.setCategoryId(updatedPost.getCategoryId());
-            return Optional.of(post);
+        if (title != null) {
+            post.setTitle(title);
         }
 
-        return Optional.empty();
-    }
-
-    public boolean deletePost(Long id) {
-        Optional<Post> postOpt = getPostById(id);
-
-        if (postOpt.isPresent()) {
-            posts.remove(postOpt.get());
-            return true;
+        if (content != null) {
+            post.setContent(content);
         }
 
-        return false;
+        if (categoryId != null) {
+            Category category = categoryService.getById(categoryId);
+            post.setCategory(category);
+        }
+
+        return repository.save(post);
+    }
+
+    public boolean deletePost(UUID id) throws PostNotFoundException {
+        if (!repository.existsById(id)) {
+            throw new PostNotFoundException(id);
+        }
+        repository.deleteById(id);
+        return true;
     }
 
     public List<Post> getPostsByDate(LocalDate date) {
-        return posts.stream()
-                .filter(post -> post.getCreatedDate().equals(date))
-                .collect(Collectors.toList());
+        LocalDateTime startOfDay = date.atStartOfDay();
+        LocalDateTime endOfDay = date.atTime(LocalTime.MAX);
+
+        return repository.findAll().stream()
+                .filter(post -> {
+                    LocalDateTime postDate = post.getCreatedDate();
+                    return postDate.isAfter(startOfDay) && postDate.isBefore(endOfDay);
+                })
+                .toList();
     }
 
-    public List<Post> getPostsByCategoryId(Long categoryId) {
-        return posts.stream()
-                .filter(post -> post.getCategoryId().equals(categoryId))
-                .collect(Collectors.toList());
+    public List<Post> getPostsByCategoryId(UUID categoryId) throws CategoryNotFoundException {
+        Category category = categoryService.getById(categoryId);
+        return repository.findByCategoryOrderByCreatedDateDesc(category);
+    }
+
+    public List<Post> getPostsByTitleOrContent(String value) {
+        return repository.findByTitleOrContentContaining(value);
     }
 }

@@ -2,20 +2,25 @@ package com.dauphine.blogger_box_backend.controllers;
 
 import com.dauphine.blogger_box_backend.dto.CategoryDTO;
 import com.dauphine.blogger_box_backend.dto.PostDTO;
+import com.dauphine.blogger_box_backend.exception.CategoryNameAlreadyExistsException;
+import com.dauphine.blogger_box_backend.exception.CategoryNotFoundException;
 import com.dauphine.blogger_box_backend.model.Category;
 import com.dauphine.blogger_box_backend.model.Post;
 import com.dauphine.blogger_box_backend.service.CategoryService;
 import com.dauphine.blogger_box_backend.service.PostService;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.util.List;
-import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
@@ -33,78 +38,101 @@ public class CategoryController {
     }
 
     @GetMapping
-    @Operation(summary = "Get all categories", description = "Retrieves a list of all available categories")
-    public ResponseEntity<List<CategoryDTO>> getAllCategories() {
-        List<Category> categories = categoryService.getAllCategories();
+    @Operation(
+            summary = "Get all categories",
+            description = "Retrieve all categories or filter like name"
+    )
+    public ResponseEntity<List<CategoryDTO>> getAll(@RequestParam(required = false) String name) {
+        List<Category> categories = name == null || name.isBlank()
+                ? categoryService.getAll()
+                : categoryService.getAllLikeName(name);
+
         List<CategoryDTO> categoryDTOs = categories.stream()
                 .map(category -> new CategoryDTO(category.getId(), category.getName()))
                 .collect(Collectors.toList());
+
         return ResponseEntity.ok(categoryDTOs);
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get category by ID", description = "Retrieves a category by its ID")
+    @Operation(
+            summary = "Get category by ID",
+            description = "Retrieve a category by its ID"
+    )
     @ApiResponse(responseCode = "200", description = "Category found")
     @ApiResponse(responseCode = "404", description = "Category not found")
-    public ResponseEntity<CategoryDTO> getCategoryById(@PathVariable Long id) {
-        Optional<Category> categoryOpt = categoryService.getCategoryById(id);
-        return categoryOpt.map(category -> ResponseEntity.ok(new CategoryDTO(category.getId(), category.getName())))
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<CategoryDTO> getById(@PathVariable UUID id) throws CategoryNotFoundException {
+        Category category = categoryService.getById(id);
+        CategoryDTO categoryDTO = new CategoryDTO(category.getId(), category.getName());
+        return ResponseEntity.ok(categoryDTO);
     }
 
     @PostMapping
-    @Operation(summary = "Create a new category", description = "Creates a new category with the provided information")
+    @Operation(
+            summary = "Create a new category",
+            description = "Create new category, only required field is the name of the category to create"
+    )
     @ApiResponse(responseCode = "201", description = "Category created successfully")
-    public ResponseEntity<CategoryDTO> createCategory(@RequestBody CategoryDTO categoryDTO) {
-        Category category = new Category();
-        category.setName(categoryDTO.getName());
+    @ApiResponse(responseCode = "409", description = "Category name already exists")
+    public ResponseEntity<CategoryDTO> create(@RequestBody CategoryDTO categoryDTO)
+            throws CategoryNameAlreadyExistsException {
 
-        Category createdCategory = categoryService.createCategory(category);
-        CategoryDTO createdCategoryDTO = new CategoryDTO(createdCategory.getId(), createdCategory.getName());
+        Category category = categoryService.create(categoryDTO.getName());
+        CategoryDTO createdCategoryDTO = new CategoryDTO(category.getId(), category.getName());
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdCategoryDTO);
+        return ResponseEntity
+                .created(URI.create("/v1/categories/" + category.getId()))
+                .body(createdCategoryDTO);
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Update a category", description = "Updates an existing category's information")
+    @Operation(
+            summary = "Update a category",
+            description = "Updates an existing category's name"
+    )
     @ApiResponse(responseCode = "200", description = "Category updated successfully")
     @ApiResponse(responseCode = "404", description = "Category not found")
-    public ResponseEntity<CategoryDTO> updateCategory(@PathVariable Long id, @RequestBody CategoryDTO categoryDTO) {
-        Category category = new Category();
-        category.setName(categoryDTO.getName());
+    public ResponseEntity<CategoryDTO> updateName(@PathVariable UUID id, @RequestBody CategoryDTO categoryDTO)
+            throws CategoryNotFoundException {
 
-        Optional<Category> updatedCategoryOpt = categoryService.updateCategory(id, category);
+        Category updatedCategory = categoryService.updateName(id, categoryDTO.getName());
+        CategoryDTO updatedCategoryDTO = new CategoryDTO(updatedCategory.getId(), updatedCategory.getName());
 
-        return updatedCategoryOpt.map(updatedCategory ->
-                        ResponseEntity.ok(new CategoryDTO(updatedCategory.getId(), updatedCategory.getName())))
-                .orElse(ResponseEntity.notFound().build());
+        return ResponseEntity.ok(updatedCategoryDTO);
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Delete a category", description = "Deletes an existing category")
+    @Operation(
+            summary = "Delete a category",
+            description = "Deletes an existing category"
+    )
     @ApiResponse(responseCode = "204", description = "Category deleted successfully")
     @ApiResponse(responseCode = "404", description = "Category not found")
-    public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
-        boolean deleted = categoryService.deleteCategory(id);
-        return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+    public ResponseEntity<Void> deleteCategory(@PathVariable UUID id) throws CategoryNotFoundException {
+        categoryService.deleteById(id);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}/posts")
-    @Operation(summary = "Get posts by category", description = "Retrieves all posts that belong to a specific category")
+    @Operation(
+            summary = "Get posts by category",
+            description = "Retrieves all posts that belong to a specific category"
+    )
     @ApiResponse(responseCode = "200", description = "Posts retrieved successfully")
     @ApiResponse(responseCode = "404", description = "Category not found")
-    public ResponseEntity<List<PostDTO>> getPostsByCategory(@PathVariable Long id) {
-        Optional<Category> categoryOpt = categoryService.getCategoryById(id);
+    public ResponseEntity<List<PostDTO>> getPostsByCategory(@PathVariable UUID id)
+            throws CategoryNotFoundException {
 
-        if (categoryOpt.isPresent()) {
-            List<Post> posts = postService.getPostsByCategoryId(id);
-            List<PostDTO> postDTOs = posts.stream()
-                    .map(post -> new PostDTO(post.getId(), post.getTitle(), post.getContent(),
-                            post.getCreatedDate(), post.getCategoryId()))
-                    .collect(Collectors.toList());
-            return ResponseEntity.ok(postDTOs);
-        }
+        List<Post> posts = postService.getPostsByCategoryId(id);
+        List<PostDTO> postDTOs = posts.stream()
+                .map(post -> new PostDTO(
+                        post.getId(),
+                        post.getTitle(),
+                        post.getContent(),
+                        post.getCreatedDate().toLocalDate(),
+                        post.getCategory().getId()))
+                .collect(Collectors.toList());
 
-        return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(postDTOs);
     }
 }

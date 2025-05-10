@@ -1,22 +1,25 @@
 package com.dauphine.blogger_box_backend.dto;
 
+import java.util.UUID;
+
 public class CategoryDTO {
-    private Long id;
+    private UUID id;
     private String name;
 
     public CategoryDTO() {
     }
 
-    public CategoryDTO(Long id, String name) {
+    public CategoryDTO(UUID id, String name) {
         this.id = id;
         this.name = name;
     }
 
-    public Long getId() {
+    // Getters et setters
+    public UUID getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 
