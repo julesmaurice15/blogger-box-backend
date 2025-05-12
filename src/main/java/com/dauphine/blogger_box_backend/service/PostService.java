@@ -25,7 +25,9 @@ public class PostService {
     }
 
     public List<Post> getAllPosts() {
-        return repository.findAll();
+        List<Post> posts = repository.findAll();
+        System.out.println("Backend - PostService: " + posts.size() + " posts récupérés de la base de données");
+        return posts;
     }
 
     public Post getPostById(UUID id) throws PostNotFoundException {

@@ -45,12 +45,18 @@ public class PostController {
 
         List<Post> posts;
 
+        System.out.println("Backend - PostController: Début de la méthode getAllPosts");
+        System.out.println("Backend - PostController: Paramètres - date: " + date + ", value: " + value);
+
         if (date != null) {
             posts = postService.getPostsByDate(date);
+            System.out.println("Backend - PostController: " + posts.size() + " posts récupérés par date");
         } else if (value != null && !value.isBlank()) {
             posts = postService.getPostsByTitleOrContent(value);
+            System.out.println("Backend - PostController: " + posts.size() + " posts récupérés par titre/contenu");
         } else {
             posts = postService.getAllPosts();
+            System.out.println("Backend - PostController: " + posts.size() + " posts récupérés de getAllPosts");
         }
 
         List<PostDTO> postDTOs = posts.stream()
@@ -61,6 +67,16 @@ public class PostController {
                         post.getCreatedDate().toLocalDate(),
                         post.getCategory().getId()))
                 .collect(Collectors.toList());
+
+        System.out.println("Backend - PostController: " + postDTOs.size() + " PostDTOs créés et prêts à être envoyés");
+        System.out.println("Backend - PostController: Détail des posts:");
+        for (int i = 0; i < Math.min(postDTOs.size(), 10); i++) { // Limiter à 10 pour éviter un log trop long
+            PostDTO dto = postDTOs.get(i);
+            System.out.println("Post #" + (i+1) + ": ID=" + dto.getId() + ", Title=" + dto.getTitle());
+        }
+        if (postDTOs.size() > 10) {
+            System.out.println("... et " + (postDTOs.size() - 10) + " autres posts");
+        }
 
         return ResponseEntity.ok(postDTOs);
     }
