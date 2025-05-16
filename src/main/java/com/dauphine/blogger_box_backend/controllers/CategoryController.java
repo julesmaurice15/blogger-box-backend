@@ -8,16 +8,12 @@ import com.dauphine.blogger_box_backend.model.Category;
 import com.dauphine.blogger_box_backend.model.Post;
 import com.dauphine.blogger_box_backend.service.CategoryService;
 import com.dauphine.blogger_box_backend.service.PostService;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;

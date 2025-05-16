@@ -2,14 +2,12 @@ package com.dauphine.blogger_box_backend.model;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 @Entity
@@ -33,7 +31,7 @@ public class Post {
     @JoinColumn(name = "category_id")
     private Category category;
 
-    // Constructeur vide nécessaire pour JPA
+
     public Post() {
     }
 
@@ -45,7 +43,7 @@ public class Post {
         this.category = category;
     }
 
-    // Getters et setters
+
     public UUID getId() {
         return id;
     }

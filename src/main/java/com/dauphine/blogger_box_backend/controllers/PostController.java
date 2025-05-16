@@ -70,7 +70,7 @@ public class PostController {
 
         System.out.println("Backend - PostController: " + postDTOs.size() + " PostDTOs créés et prêts à être envoyés");
         System.out.println("Backend - PostController: Détail des posts:");
-        for (int i = 0; i < Math.min(postDTOs.size(), 10); i++) { // Limiter à 10 pour éviter un log trop long
+        for (int i = 0; i < Math.min(postDTOs.size(), 10); i++) {
             PostDTO dto = postDTOs.get(i);
             System.out.println("Post #" + (i+1) + ": ID=" + dto.getId() + ", Title=" + dto.getTitle());
         }

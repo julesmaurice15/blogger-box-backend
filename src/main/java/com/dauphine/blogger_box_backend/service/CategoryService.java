@@ -32,7 +32,6 @@ public class CategoryService {
     }
 
     public Category create(String name) throws CategoryNameAlreadyExistsException {
-        // Vérifier si le nom existe déjà
         List<Category> existingCategories = getAllLikeName(name);
         for (Category cat : existingCategories) {
             if (cat.getName().equalsIgnoreCase(name)) {

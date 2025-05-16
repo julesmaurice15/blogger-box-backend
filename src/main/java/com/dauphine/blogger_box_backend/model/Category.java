@@ -1,8 +1,7 @@
 package com.dauphine.blogger_box_backend.model;
 
-import java.util.List;
-import java.util.UUID;
 
+import java.util.UUID;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -18,7 +17,7 @@ public class Category {
     @Column(name = "name")
     private String name;
 
-    // Constructeur vide nécessaire pour JPA
+
     public Category() {
     }
 
@@ -27,7 +26,7 @@ public class Category {
         this.name = name;
     }
 
-    // Getters et setters
+
     public UUID getId() {
         return id;
     }
